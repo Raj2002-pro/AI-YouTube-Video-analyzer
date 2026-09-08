@@ -1,189 +1,181 @@
+import os
+import re
 import streamlit as st
+
+# ---------------------------------------------------------
+# GROQ API KEY
+# ---------------------------------------------------------
+# This allows the app to work both locally (.env)
+# and on Streamlit Cloud (Secrets).
+
+try:
+    if "GROQ_API_KEY" in st.secrets:
+        os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+except Exception:
+    pass
+
 from YT_agent import build_youtube_agent
 
 
-# ============================================================
+# ---------------------------------------------------------
 # PAGE CONFIG
-# ============================================================
-
+# ---------------------------------------------------------
 st.set_page_config(
     page_title="AI YouTube Video Analyzer",
     page_icon="▶️",
-    layout="centered"
+    layout="wide",
 )
 
 
-# ============================================================
-# CSS
-# ============================================================
+# ---------------------------------------------------------
+# CUSTOM CSS
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <style>
 
-st.markdown("""
-<style>
+    /* Main page */
+    .stApp {
+        background: #ffffff;
+    }
 
-.stApp {
-    background-color: #fafafa;
-}
+    .block-container {
+        max-width: 1100px;
+        padding-top: 2rem;
+        padding-bottom: 4rem;
+    }
 
-.block-container {
-    max-width: 900px;
-    padding-top: 35px;
-    padding-bottom: 50px;
-}
+    /* Hide Streamlit default elements */
+    #MainMenu {
+        visibility: hidden;
+    }
 
-#MainMenu {
-    visibility: hidden;
-}
+    footer {
+        visibility: hidden;
+    }
 
-footer {
-    visibility: hidden;
-}
+    /* Main heading */
+    .main-title {
+        text-align: center;
+        font-size: 52px;
+        font-weight: 800;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        color: #292b38;
+    }
 
+    .gradient-text {
+        background: linear-gradient(
+            90deg,
+            #7c3aed,
+            #a855f7,
+            #c026d3
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-/* ================= TITLE ================= */
+    .subtitle {
+        text-align: center;
+        font-size: 18px;
+        color: #666b78;
+        margin-bottom: 35px;
+    }
 
-.main-title {
-    text-align: center;
-    font-size: 46px;
-    font-weight: 800;
-    color: #222222;
-    margin-bottom: 8px;
-}
+    /* Feature buttons */
+    div.stButton > button {
+        width: 100%;
+        height: 62px;
+        border-radius: 15px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        color: #30323d;
+        font-size: 16px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
 
-.purple {
-    color: #8b3dff;
-}
+    div.stButton > button:hover {
+        border-color: #a855f7;
+        color: #7c3aed;
+        transform: translateY(-1px);
+    }
 
-.subtitle {
-    text-align: center;
-    color: #666666;
-    font-size: 18px;
-    margin-bottom: 35px;
-}
+    /* Analyze button */
+    .analyze-button button {
+        background: linear-gradient(
+            135deg,
+            #8b3dff,
+            #a855f7
+        ) !important;
 
+        color: white !important;
+        border: none !important;
+        font-weight: 700 !important;
+    }
 
-/* ================= FEATURE BUTTONS ================= */
+    .analyze-button button:hover {
+        color: white !important;
+        border: none !important;
+    }
 
-div.stButton > button {
-    border-radius: 12px;
-    border: 1px solid #e5e5e5;
-    background-color: white;
-    color: #444444;
-    font-size: 14px;
-    font-weight: 600;
-    min-height: 50px;
-}
+    /* URL input */
+    div[data-testid="stTextInput"] input {
+        height: 62px;
+        border-radius: 15px;
+        border: 1px solid #dedee5;
+        font-size: 16px;
+        padding-left: 20px;
+    }
 
-div.stButton > button:hover {
-    border-color: #a855f7;
-    color: #7c2cff;
-}
+    div[data-testid="stTextInput"] input:focus {
+        border-color: #9b5cff;
+        box-shadow: 0 0 0 1px #9b5cff;
+    }
 
+    /* Report box */
+    .report-title {
+        font-size: 30px;
+        font-weight: 800;
+        color: #292b38;
+        margin-top: 55px;
+        margin-bottom: 25px;
+    }
 
-/* ================= SELECTED MODE ================= */
+    .section-info {
+        background: #faf7ff;
+        border: 1px solid #eadcff;
+        border-radius: 14px;
+        padding: 15px 20px;
+        margin-bottom: 25px;
+        color: #6d28d9;
+        font-size: 15px;
+    }
 
-.selected-mode {
-    text-align: center;
-    color: #7c2cff;
-    font-size: 13px;
-    font-weight: 600;
-    margin-top: 4px;
-    margin-bottom: 15px;
-}
+    /* Example */
+    .example-text {
+        text-align: center;
+        color: #888;
+        margin-top: 35px;
+        margin-bottom: 10px;
+    }
 
+    /* Divider */
+    .divider {
+        height: 1px;
+        background: #eeeeee;
+        margin: 40px 0;
+    }
 
-/* ================= INPUT ================= */
-
-div[data-testid="stTextInput"] input {
-    height: 52px;
-    border-radius: 12px;
-    border: 1px solid #dddddd;
-    font-size: 15px;
-    padding-left: 15px;
-    background-color: white;
-}
-
-div[data-testid="stTextInput"] input:focus {
-    border-color: #9b4dff;
-    box-shadow: 0 0 0 1px #9b4dff;
-}
-
-
-/* ================= ANALYZE ================= */
-
-.analyze-container {
-    margin-top: 0px;
-}
-
-.analyze-button button {
-    height: 52px !important;
-    border-radius: 12px !important;
-    border: none !important;
-    background: linear-gradient(
-        90deg,
-        #8b3dff,
-        #a855f7
-    ) !important;
-    color: white !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-}
-
-
-/* ================= EXAMPLE ================= */
-
-.try-text {
-    text-align: center;
-    color: #999999;
-    font-size: 13px;
-    margin-top: 25px;
-    margin-bottom: 8px;
-}
-
-
-/* ================= RESULT ================= */
-
-.result-title {
-    font-size: 28px;
-    font-weight: 800;
-    color: #222222;
-    margin-top: 45px;
-    margin-bottom: 20px;
-}
-
-.summary-box {
-    background: white;
-    border: 1px solid #e7e7e7;
-    border-radius: 16px;
-    padding: 25px;
-    margin-bottom: 25px;
-    box-shadow: 0px 5px 20px rgba(0,0,0,0.03);
-}
-
-.summary-heading {
-    font-size: 23px;
-    font-weight: 800;
-    color: #7c2cff;
-    margin-bottom: 12px;
-}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
-/* ================= FOOTER ================= */
-
-.footer-text {
-    text-align: center;
-    color: #999999;
-    font-size: 13px;
-    margin-top: 60px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# AI AGENT
-# ============================================================
-
+# ---------------------------------------------------------
+# AGENT
+# ---------------------------------------------------------
 @st.cache_resource
 def get_agent():
     return build_youtube_agent()
@@ -192,343 +184,362 @@ def get_agent():
 agent = get_agent()
 
 
-# ============================================================
+# ---------------------------------------------------------
 # SESSION STATE
-# ============================================================
+# ---------------------------------------------------------
+if "analysis_report" not in st.session_state:
+    st.session_state.analysis_report = None
 
-if "analysis_mode" not in st.session_state:
-    st.session_state.analysis_mode = "YouTube"
+if "selected_section" not in st.session_state:
+    st.session_state.selected_section = "Detailed Summary"
 
 
-# ============================================================
+# ---------------------------------------------------------
+# FUNCTION TO EXTRACT SECTIONS
+# ---------------------------------------------------------
+def extract_section(report, section_name):
+    """
+    Extract one section from the AI-generated report.
+
+    It looks for headings such as:
+    ## Detailed Summary
+    ## Key Insights
+    ### Timeline
+    etc.
+    """
+
+    if not report:
+        return ""
+
+    # Possible names for each section
+    aliases = {
+        "Detailed Summary": [
+            "Detailed Summary",
+            "Detailed summary",
+            "Overall Summary",
+            "Overall summary",
+        ],
+
+        "Summary": [
+            "Summary",
+            "Video Summary",
+            "Brief Summary",
+        ],
+
+        "Key Insights": [
+            "Key Insights",
+            "Key insights",
+            "Key Takeaways",
+            "Key takeaways",
+        ],
+
+        "Timeline": [
+            "Timeline",
+            "Video Timeline",
+            "Timestamps",
+        ],
+
+        "Topics": [
+            "Topics",
+            "Main Topics",
+            "Topics Covered",
+        ],
+    }
+
+    names = aliases.get(section_name, [section_name])
+
+    # Build regex for headings
+    heading_pattern = "|".join(
+        re.escape(name) for name in names
+    )
+
+    # Look for markdown headings
+    pattern = rf"(?im)^#+\s*({heading_pattern})\s*$"
+
+    matches = list(re.finditer(pattern, report))
+
+    if not matches:
+        # If the section does not exist,
+        # return a helpful message.
+        return (
+            f"### {section_name}\n\n"
+            f"The AI report did not generate a separate "
+            f"**{section_name}** section."
+        )
+
+    start = matches[0].start()
+
+    # Find the next markdown heading
+    next_heading = re.search(
+        r"(?im)^#+\s+.+$",
+        report[matches[0].end():]
+    )
+
+    if next_heading:
+        end = matches[0].end() + next_heading.start()
+    else:
+        end = len(report)
+
+    section = report[start:end].strip()
+
+    # Remove the heading itself
+    section = re.sub(
+        rf"(?im)^#+\s*({heading_pattern})\s*$",
+        "",
+        section,
+        count=1
+    ).strip()
+
+    return section
+
+
+# ---------------------------------------------------------
 # HEADER
-# ============================================================
-
+# ---------------------------------------------------------
 st.markdown(
-    '<h1 class="main-title">AI YouTube <span class="purple">Video Analyzer</span></h1>',
+    """
+    <div class="main-title">
+        AI YouTube <span class="gradient-text">Video Analyzer</span>
+    </div>
+
+    <div class="subtitle">
+        Turn any YouTube video into a clear, structured and intelligent
+        analysis using AI.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ---------------------------------------------------------
+# NAVIGATION BUTTONS
+# ---------------------------------------------------------
+st.markdown(
+    "<div style='margin-top:10px;'></div>",
     unsafe_allow_html=True
 )
 
-st.markdown(
-    '<p class="subtitle">'
-    'Turn any YouTube video into a clear, structured and intelligent analysis using AI.'
-    '</p>',
-    unsafe_allow_html=True
+col1, col2, col3, col4, col5, col6 = st.columns(
+    [1, 1, 1, 1, 1, 1]
 )
-
-
-# ============================================================
-# FEATURE BUTTONS
-# ============================================================
-
-col1, col2, col3, col4, col5 = st.columns(5)
-
 
 with col1:
-    if st.button("▶ YouTube", use_container_width=True):
-        st.session_state.analysis_mode = "YouTube"
-
+    if st.button("▶ YouTube"):
+        st.session_state.selected_section = "Full Report"
+        st.rerun()
 
 with col2:
-    if st.button("📝 Summary", use_container_width=True):
-        st.session_state.analysis_mode = "Summary"
-
+    if st.button("📑 Summary"):
+        st.session_state.selected_section = "Summary"
+        st.rerun()
 
 with col3:
-    if st.button("💡 Key Insights", use_container_width=True):
-        st.session_state.analysis_mode = "Key Insights"
-
+    if st.button("💡 Key Insights"):
+        st.session_state.selected_section = "Key Insights"
+        st.rerun()
 
 with col4:
-    if st.button("🕐 Timeline", use_container_width=True):
-        st.session_state.analysis_mode = "Timeline"
-
+    if st.button("⏱️ Timeline"):
+        st.session_state.selected_section = "Timeline"
+        st.rerun()
 
 with col5:
-    if st.button("🎯 Topics", use_container_width=True):
-        st.session_state.analysis_mode = "Topics"
+    if st.button("🎯 Topics"):
+        st.session_state.selected_section = "Topics"
+        st.rerun()
+
+with col6:
+    if st.button("📖 Detailed Summary"):
+        st.session_state.selected_section = "Detailed Summary"
+        st.rerun()
 
 
-# ============================================================
-# CURRENT MODE
-# ============================================================
-
+# ---------------------------------------------------------
+# URL INPUT
+# ---------------------------------------------------------
 st.markdown(
-    f'<div class="selected-mode">'
-    f'Currently selected: {st.session_state.analysis_mode}'
-    f'</div>',
+    "<div style='margin-top:30px;'></div>",
     unsafe_allow_html=True
 )
-
-
-# ============================================================
-# URL INPUT
-# ============================================================
 
 input_col, button_col = st.columns([4, 1])
 
-
 with input_col:
-
     video_url = st.text_input(
         "YouTube URL",
-        placeholder="🔗 Paste a YouTube URL here...",
-        label_visibility="collapsed"
+        placeholder="Paste a YouTube URL here...",
+        label_visibility="collapsed",
     )
 
-
 with button_col:
-
     st.markdown(
-        '<div class="analyze-container">',
+        '<div class="analyze-button">',
         unsafe_allow_html=True
     )
 
-    analyze_button = st.button(
+    analyze = st.button(
         "✨ Analyze",
         use_container_width=True
     )
 
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ============================================================
+# ---------------------------------------------------------
 # EXAMPLE
-# ============================================================
-
+# ---------------------------------------------------------
 st.markdown(
-    '<div class="try-text">Try an example</div>',
+    "<div class='example-text'>Try an example</div>",
     unsafe_allow_html=True
 )
 
-example_button = st.button(
-    "▶ Try Example Video"
+example_col1, example_col2, example_col3 = st.columns(
+    [1, 2, 1]
 )
 
-example_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+with example_col1:
+    if st.button("▶ Try Example Video"):
+        video_url = (
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        )
+        analyze = True
 
 
-if example_button:
-
-    video_url = example_url
-    analyze_button = True
-
-
-# ============================================================
-# PROMPTS FOR DIFFERENT BUTTONS
-# ============================================================
-
-mode_instructions = {
-
-    "YouTube": """
-Give a complete analysis of the YouTube video.
-
-Cover:
-- Video overview
-- Detailed Summary
-- Main ideas
-- Important points
-- Key insights
-- Timeline
-- Main topics
-- Important conclusions
-
-Make the explanation understandable to someone who has NOT watched
-the video.
-""",
-
-    "Summary": """
-Focus primarily on summarizing the video.
-
-Give:
-- A short summary
-- A separate Detailed Summary section
-
-The Detailed Summary must explain the complete discussion,
-story, arguments, events and conclusions in enough detail that
-someone who has never watched the video can understand the entire
-idea of the video.
-
-Do not just list keywords. Explain the ideas naturally.
-""",
-
-    "Key Insights": """
-Focus primarily on the most important ideas and takeaways.
-
-Give:
-- Detailed Summary
-- Key Insights
-- Important arguments or observations
-- Lessons / takeaways
-- Important conclusions
-
-The Detailed Summary must explain the complete video so that
-a person who has never watched it can understand what was
-discussed and why it matters.
-""",
-
-    "Timeline": """
-Focus primarily on the chronological structure of the video.
-
-Give:
-- Detailed Summary
-- Important timestamps
-- What happens or is discussed at each major point
-- Major transitions
-- Important events or discussions in order
-
-The Detailed Summary must still explain the complete idea of
-the video for someone who has never watched it.
-""",
-
-    "Topics": """
-Focus primarily on the major topics discussed in the video.
-
-Give:
-- Detailed Summary
-- Main topics
-- Subtopics
-- What the speaker/guests say about each topic
-- Important conclusions
-
-The Detailed Summary must explain the complete video clearly
-enough for someone who has never watched it.
-"""
-}
-
-
-# ============================================================
+# ---------------------------------------------------------
 # ANALYZE VIDEO
-# ============================================================
+# ---------------------------------------------------------
+if analyze:
 
-if analyze_button:
-
-    if not video_url:
-
-        st.warning(
-            "🔗 Please paste a YouTube video URL first."
-        )
-
-    elif (
-        "youtube.com" not in video_url
-        and
-        "youtu.be" not in video_url
-    ):
-
-        st.error(
-            "❌ Please enter a valid YouTube URL."
-        )
+    if not video_url.strip():
+        st.warning("Please enter a YouTube video URL.")
 
     else:
 
-        selected_mode = st.session_state.analysis_mode
-
-        prompt = f"""
-You are analyzing a YouTube video.
-
-Video URL:
-{video_url}
-
-The user selected this analysis mode:
-{selected_mode}
-
-IMPORTANT:
-
-Always include a clearly separated section called:
-
-## 📖 Detailed Summary
-
-This section is extremely important.
-
-Explain the WHOLE video in a clear and comprehensive way.
-
-Imagine the reader has NEVER watched this video.
-
-After reading the Detailed Summary, they should understand:
-
-- What the video is about
-- Who is involved
-- What is being discussed
-- The important events or arguments
-- How the discussion progresses
-- Important examples mentioned
-- Important opinions or viewpoints
-- The final conclusion or outcome
-
-Do not make the Detailed Summary just a collection of bullet points.
-
-Explain the actual meaning and flow of the discussion in simple
-language.
-
-Do not invent information that is not present in the video.
-
-After the Detailed Summary, provide the section requested
-by the selected mode.
-
-{mode_instructions[selected_mode]}
-
-Use clear Markdown headings and bullet points where appropriate.
-Keep the explanation detailed but easy to read.
-"""
-
-        # --------------------------------------------
-        # RUN AGENT
-        # --------------------------------------------
-
         with st.spinner(
-            "🧠 AI is analyzing the video..."
+            "🎬 Analyzing the video... This may take a moment."
         ):
 
             try:
 
-                response = agent.run(prompt)
+                response = agent.run(
+                    f"""
+                    Analyze this YouTube video:
 
-                # ----------------------------------------
-                # RESULT TITLE
-                # ----------------------------------------
+                    {video_url}
 
-                st.markdown(
-                    '<div class="result-title">'
-                    '🧠 AI Analysis Report'
-                    '</div>',
-                    unsafe_allow_html=True
+                    Provide a complete structured report.
+                    Make sure the report contains these sections:
+
+                    ## Detailed Summary
+                    Explain the complete idea of the video in detail.
+                    A person who has NOT watched the video should be
+                    able to understand the entire video from this section.
+
+                    ## Summary
+                    Give a shorter overview of the video.
+
+                    ## Key Insights
+                    List the most important ideas, lessons,
+                    arguments and takeaways.
+
+                    ## Timeline
+                    Give important timestamps and explain what
+                    happens at those points.
+
+                    ## Topics
+                    List the major topics discussed in the video.
+
+                    ## Video Overview
+                    Include title, channel, approximate duration,
+                    format and other useful information.
+                    """
                 )
 
-                # ----------------------------------------
-                # RESULT
-                # ----------------------------------------
+                st.session_state.analysis_report = response.content
 
-                if hasattr(response, "content"):
-
-                    report = response.content
-
-                else:
-
-                    report = str(response)
-
-                st.markdown(report)
+                # Automatically open Detailed Summary
+                st.session_state.selected_section = "Detailed Summary"
 
             except Exception as e:
 
                 st.error(
-                    "⚠️ Something went wrong while analyzing the video."
+                    "Something went wrong while analyzing the video."
                 )
 
-                with st.expander("Show technical error"):
-
-                    st.code(str(e))
+                st.exception(e)
 
 
-# ============================================================
+# ---------------------------------------------------------
+# DISPLAY REPORT
+# ---------------------------------------------------------
+if st.session_state.analysis_report:
+
+    report = st.session_state.analysis_report
+    selected = st.session_state.selected_section
+
+    st.markdown(
+        "<div class='divider'></div>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "## 🧠 AI Analysis Report",
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------------------------------
+    # FULL REPORT
+    # -----------------------------------------------------
+    if selected == "Full Report":
+
+        st.markdown(
+            """
+            <div class="section-info">
+                📚 Showing the complete AI analysis report.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown(report)
+
+    # -----------------------------------------------------
+    # INDIVIDUAL SECTION
+    # -----------------------------------------------------
+    else:
+
+        st.markdown(
+            f"""
+            <div class="section-info">
+                📌 Currently viewing: <strong>{selected}</strong>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        section_content = extract_section(
+            report,
+            selected
+        )
+
+        st.markdown(section_content)
+
+
+# ---------------------------------------------------------
 # FOOTER
-# ============================================================
-
+# ---------------------------------------------------------
 st.markdown(
-    '<div class="footer-text">'
-    'Built with Streamlit • Agno • Groq AI'
-    '</div>',
+    """
+    <div class="divider"></div>
+
+    <div style="
+        text-align:center;
+        color:#999;
+        font-size:14px;
+        padding-bottom:20px;
+    ">
+        🤖 Powered by AI • YouTube Video Analyzer
+    </div>
+    """,
     unsafe_allow_html=True
 )
