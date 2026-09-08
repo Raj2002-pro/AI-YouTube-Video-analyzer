@@ -84,21 +84,31 @@ st.markdown(
 
     /* Feature buttons */
     div.stButton > button {
-        width: 100%;
-        height: 62px;
-        border-radius: 15px;
-        border: 1px solid #e5e7eb;
-        background: white;
-        color: #30323d;
-        font-size: 16px;
-        font-weight: 500;
-        transition: all 0.2s ease;
+    width: 100%;
+    height: 62px;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    background: linear-gradient(145deg, #ffffff, #fafafa);
+    color: #30323d;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(124, 58, 237, 0.06);
+    transition: all 0.2s ease;
     }
 
+    /* Button hover effect */
     div.stButton > button:hover {
-        border-color: #a855f7;
-        color: #7c3aed;
-        transform: translateY(-1px);
+    border-color: #a855f7;
+    color: #7c3aed;
+    background: linear-gradient(145deg, #ffffff, #f8f3ff);
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.14);
+    transform: translateY(-2px);
+    }
+
+    /* Button click effect */
+    div.stButton > button:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.10);
     }
 
     /* Analyze button */
